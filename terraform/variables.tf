@@ -60,6 +60,18 @@ variable "desired_task_count" {
   default     = 2
 }
 
+variable "fargate_cpu" {
+  description = "Fargate task CPU units (256, 512, 1024, 2048, 4096)"
+  type        = string
+  default     = "512"
+}
+
+variable "fargate_memory" {
+  description = "Fargate task memory in MB (512, 1024, 2048, etc.)"
+  type        = string
+  default     = "1024"
+}
+
 variable "certificate_arn" {
   description = "Optional ACM Certificate ARN for HTTPS listener. If empty, ALB listens on HTTP port 80."
   type        = string

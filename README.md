@@ -102,15 +102,15 @@ The pipeline automates security verification at every step of the release cycle 
 - **GitLab CI/CD:** [.gitlab-ci.yml](file:///d:/2026%20-%20REC/Indico/.gitlab-ci.yml) (10-stage pipeline with OIDC authentication)
 - **GitHub Actions:** [devsecops-pipeline.yml](file:///d:/2026%20-%20REC/Indico/.github/workflows/devsecops-pipeline.yml) (OIDC + SARIF security tab uploads)
 
-### The 9-Stage Security Pipeline:
+### The 10-Stage Security & Multi-Environment Promotion Pipeline:
 ```
 [1. Source Validation] ──> [2. Secret Scan] ──> [3. SAST Scan] ──> [4. SCA Scan] ──> [5. IaC Scan]
      (Flake8/Black)          (Gitleaks)           (Semgrep)         (Trivy fs)          (Checkov)
                                                                                             │
      ┌──────────────────────────────────────────────────────────────────────────────────────┘
      ▼
-[6. Docker Build] ───> [7. Container Scan] ───> [8. DAST Scan] ───> [9. OIDC Prod Deploy]
-  (Multi-Stage)            (Trivy image)          (OWASP ZAP)        (Manual Approval Gate)
+[6. Docker Build] ───> [7. Container Scan] ───> [8. DAST Scan] ───> [9. Staging Deploy] ───> [10. Prod Deploy]
+  (Multi-Stage)            (Trivy image)          (OWASP ZAP)          (Pre-Prod Test)        (Manual Gate)
 ```
 
 ### Security Gates & Enforcement Rules:
@@ -119,8 +119,9 @@ The pipeline automates security verification at every step of the release cycle 
 - **Gate 3: SCA Dependencies (Trivy fs):** Fails on `CRITICAL` or `HIGH` CVEs with an available upstream patch.
 - **Gate 4: IaC Security (Checkov):** Blocks open database ports (`0.0.0.0/0`), missing encryption, or wildcard IAM policies (`*`).
 - **Gate 5: Container Security (Trivy image):** Fails on `CRITICAL` vulnerabilities in the container image filesystem.
-- **Gate 6: Dynamic Testing (OWASP ZAP):** Blocks on active exploitable vulnerabilities.
-- **Gate 7: Production Deployment Gate:** Requires manual approval in a protected environment and authenticates to AWS via **OIDC temporary credentials** (STS `AssumeRoleWithWebIdentity`). Zero long-lived keys are stored in CI/CD variables.
+- **Gate 6: Dynamic Testing (OWASP ZAP):** Ephemeral container spin-up with baseline active exploit scanning.
+- **Gate 7: Staging Automated Deployment:** Deploys validated image to the staging environment for automated integration and smoke tests.
+- **Gate 8: Production Promotion Gate:** Requires **Manual Approval** in GitHub/GitLab protected environments. Uses the exact immutable Docker image verified in Staging (no rebuilding from code) and authenticates to AWS via **OIDC temporary credentials** (STS `AssumeRoleWithWebIdentity`). Zero static keys exist.
 
 ---
 
@@ -175,6 +176,16 @@ terraform validate
 
 # 6. Run Checkov IaC security scanner
 checkov -d . --framework terraform --compact
+
+# 7. Multi-Environment Provisioning Commands
+# Development (Cost-optimized, 1 replica)
+terraform plan -var-file="environments/dev.tfvars"
+
+# Staging (Pre-production testing, 1 replica)
+terraform plan -var-file="environments/staging.tfvars"
+
+# Production (High availability, Multi-AZ, 2+ replicas)
+terraform plan -var-file="environments/production.tfvars"
 cd ..
 ```
 

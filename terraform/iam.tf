@@ -107,6 +107,14 @@ resource "aws_iam_role_policy_attachment" "ecs_task_attachment" {
 }
 
 # ------------------------------------------------------------------------------
+# GitHub Actions OpenID Connect (OIDC) Identity Provider
+resource "aws_iam_openid_connect_provider" "github" {
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1", "1c58a2a97ac93e75741154a00afb2b2e5f65ff52"]
+}
+
+# ------------------------------------------------------------------------------
 # 3. CI/CD Pipeline Deployment Role (GitHub Actions / GitLab CI via OIDC)
 # Eliminates long-lived static AWS access keys entirely!
 # ------------------------------------------------------------------------------
@@ -121,7 +129,7 @@ resource "aws_iam_role" "cicd_deployer_role" {
         Sid    = "GitHubActionsOIDCAssumeRole"
         Effect = "Allow"
         Principal = {
-          Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
+          Federated = aws_iam_openid_connect_provider.github.arn
         }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
