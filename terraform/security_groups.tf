@@ -73,14 +73,14 @@ resource "aws_security_group_rule" "ecs_ingress_from_alb" {
   security_group_id        = aws_security_group.ecs_tasks.id
 }
 
-resource "aws_security_group_rule" "ecs_egress_to_endpoints" {
-  description              = "Allow HTTPS outbound to VPC endpoints"
-  type                     = "egress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.vpc_endpoints.id
-  security_group_id        = aws_security_group.ecs_tasks.id
+resource "aws_security_group_rule" "ecs_egress_https" {
+  description       = "Allow outbound HTTPS for ECR image pulls, S3 layers, and AWS APIs"
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.ecs_tasks.id
 }
 
 resource "aws_security_group_rule" "ecs_egress_to_rds" {
