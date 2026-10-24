@@ -25,8 +25,7 @@ devsecops-home-test/
 ├── .gitleaks.toml                         # Custom secret scanning configuration
 ├── architecture/
 │   ├── architecture-design.md             # Detailed AWS architecture, request flows & IAM design
-│   ├── architecture-diagram.svg           # High-resolution vector architecture diagram
-│   └── architecture_diagram.png           # Visual multi-AZ architecture overview
+│   └── architecture-diagram.png           # High-resolution architecture diagram (1080p)
 ├── app/
 │   ├── Dockerfile                         # Hardened multi-stage non-root container definition
 │   ├── .dockerignore                      # Context exclusions preventing credential leaks
@@ -73,6 +72,8 @@ The backend API is deployed inside a dedicated, multi-AZ Amazon VPC across two A
 5. **Zero-Egress Private Backbone (AWS PrivateLink):** Interface VPC Endpoints for Amazon ECR, AWS Secrets Manager, AWS KMS, and CloudWatch Logs allow tasks to communicate with AWS APIs without internet gateways or NAT gateways.
 
 Detailed request flows, subnet allocations, and threat mitigations are documented in [architecture-design.md](file:///d:/2026%20-%20REC/Indico/architecture/architecture-design.md).
+
+![Secure Containerized Backend API Architecture with AWS Fargate](architecture/architecture-diagram.png)
 
 ```
                       +---------------------------------------+
@@ -225,7 +226,7 @@ docker stop test-api && docker rm test-api
 | Task / Scenario | Deliverable Document | Core Solution / Key Takeaway |
 | :--- | :--- | :--- |
 | **Task 1: AWS Architecture** | [architecture-design.md](file:///d:/2026%20-%20REC/Indico/architecture/architecture-design.md) | Multi-AZ VPC, ALB + WAF, Fargate in private subnets, PrivateLink endpoints, zero public IPs. |
-| **Task 2: CI/CD Pipeline** | [.gitlab-ci.yml](file:///d:/2026%20-%20REC/Indico/.gitlab-ci.yml) / [devsecops-pipeline.yml](file:///d:/2026%20-%20REC/Indico/.github/workflows/devsecops-pipeline.yml) | 9 automated stages, SARIF reporting, fail-on-critical gates, OIDC AWS authentication. |
+| **Task 2: CI/CD Pipeline** | [.gitlab-ci.yml](file:///d:/2026%20-%20REC/Indico/.gitlab-ci.yml) / [devsecops-pipeline.yml](file:///d:/2026%20-%20REC/Indico/.github/workflows/devsecops-pipeline.yml) | 10 automated stages (DevSecOps + Multi-Environment Promotion), SonarCloud gate, OIDC AWS authentication. |
 | **Task 3: Scenario A (IAM `*`)** | [scenarios-remediation.md](file:///d:/2026%20-%20REC/Indico/security/scenarios-remediation.md) | Prevent account takeover by scoping resource ARNs, separating CI/CD from runtime, and enforcing OIDC. |
 | **Task 3: Scenario B (DB `0.0.0.0/0`)**| [scenarios-remediation.md](file:///d:/2026%20-%20REC/Indico/security/scenarios-remediation.md) | Checkov rules `CKV_AWS_17` and `CKV_AWS_260` fail the CI build; PR branch protection blocks merge. |
 | **Task 3: Scenario C (State Secret)** | [scenarios-remediation.md](file:///d:/2026%20-%20REC/Indico/security/scenarios-remediation.md) | Immediate DB password rotation, git history purge via filter-repo, migrate to AWS IAM DB Auth. |

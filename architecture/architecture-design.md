@@ -13,6 +13,8 @@ This architecture provides an enterprise-ready, defense-in-depth AWS deployment 
 
 ## 2. Architecture Overview & Visual Diagram
 
+![Secure Containerized Backend API Architecture with AWS Fargate](architecture-diagram.png)
+
 The architecture is divided into three distinct network tiers across two Availability Zones (AZs) inside a dedicated Amazon VPC:
 1. **Public Edge Tier:** Amazon Route 53, AWS WAF, and Application Load Balancer (ALB).
 2. **Private Application Tier:** Amazon ECS with AWS Fargate tasks running in private subnets with no public IP addresses.
