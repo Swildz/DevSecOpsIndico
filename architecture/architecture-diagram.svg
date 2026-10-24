@@ -69,7 +69,7 @@
   <!-- VPC Container -->
   <g transform="translate(460, 80)">
     <rect width="700" height="590" rx="12" fill="url(#vpcGrad)" stroke="#0ea5e9" stroke-width="1.8" stroke-dasharray="6,4"/>
-    <text x="20" y="26" font-size="14" font-weight="bold" fill="#38bdf8">Amazon VPC (10.0.0.0/16) - ap-southeast-1</text>
+    <text x="20" y="26" font-size="14" font-weight="bold" fill="#38bdf8">Amazon VPC (10.0.0.0/16) - ap-southeast-2</text>
     
     <!-- Public Subnets Box -->
     <g transform="translate(15, 38)">

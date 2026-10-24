@@ -20,7 +20,7 @@ variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
   APP_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
-  AWS_DEFAULT_REGION: "ap-southeast-1"
+  AWS_DEFAULT_REGION: "ap-southeast-2"
   # OIDC Role ARN (Short-lived temporary STS credentials, NO static keys!)
   AWS_ROLE_ARN: "arn:aws:iam::858093958225:role/gitlab-ci-fargate-deployer"
 

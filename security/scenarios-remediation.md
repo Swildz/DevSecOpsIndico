@@ -32,8 +32,8 @@ A secure deployment model enforces four core principles:
 1. **Resource-Level ARNs:** Restrict actions to explicitly named target clusters, services, and repositories:
    ```hcl
    Resource = [
-     "arn:aws:ecs:ap-southeast-1:858093958225:service/indico-api-production-cluster/indico-api-production-service",
-     "arn:aws:ecr:ap-southeast-1:858093958225:repository/indico-api-production-api"
+     "arn:aws:ecs:ap-southeast-2:858093958225:service/indico-api-production-cluster/indico-api-production-service",
+     "arn:aws:ecr:ap-southeast-2:858093958225:repository/indico-api-production-api"
    ]
    ```
 2. **Separation of Deployment vs. Application Runtime Roles:**

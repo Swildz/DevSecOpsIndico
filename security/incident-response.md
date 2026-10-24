@@ -85,7 +85,7 @@ aws ecs describe-tasks \
     {
       "Effect": "Allow",
       "Action": ["secretsmanager:GetSecretValue"],
-      "Resource": "arn:aws:secretsmanager:ap-southeast-1:858093958225:secret:app/production/database-*"
+      "Resource": "arn:aws:secretsmanager:ap-southeast-2:858093958225:secret:app/production/database-*"
     }
     ```
 
@@ -100,7 +100,7 @@ aws ecs describe-tasks \
     "Resource": "*",
     "Condition": {
       "StringEquals": {
-        "kms:ViaService": "secretsmanager.ap-southeast-1.amazonaws.com"
+        "kms:ViaService": "secretsmanager.ap-southeast-2.amazonaws.com"
       }
     }
   }
@@ -110,8 +110,8 @@ aws ecs describe-tasks \
 - Since ECS Fargate tasks reside in private subnets with no public IPs, they cannot reach public AWS API endpoints unless a NAT Gateway or VPC Endpoints exist.
 - **Verification Checklist:**
   1. Confirm interface VPC Endpoints exist for both:
-     - `com.amazonaws.ap-southeast-1.secretsmanager`
-     - `com.amazonaws.ap-southeast-1.kms`
+     - `com.amazonaws.ap-southeast-2.secretsmanager`
+     - `com.amazonaws.ap-southeast-2.kms`
   2. Confirm `private_dns_enabled = true` on both VPC endpoints.
   3. Confirm the **VPC Endpoint Security Group** allows inbound TCP port 443 from the **ECS Task Security Group**.
   4. Confirm the ECS Task Security Group allows outbound TCP port 443 to the VPC Endpoint Security Group.

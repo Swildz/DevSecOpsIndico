@@ -15,7 +15,7 @@ pipeline {
     }
 
     environment {
-        AWS_DEFAULT_REGION = 'ap-southeast-1'
+        AWS_DEFAULT_REGION = 'ap-southeast-2'
         AWS_ACCOUNT_ID     = '858093958225'
         ECR_REPO_NAME      = 'indico-api-production-api'
         IMAGE_TAG          = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"

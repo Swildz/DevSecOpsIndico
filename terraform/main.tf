@@ -16,7 +16,7 @@ terraform {
   # backend "s3" {
   #   bucket         = "indico-terraform-state-prod"
   #   key            = "backend-api/terraform.tfstate"
-  #   region         = "ap-southeast-1"
+  #   region         = "ap-southeast-2"
   #   encrypt        = true
   #   dynamodb_table = "indico-terraform-locks"
   # }

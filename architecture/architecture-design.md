@@ -142,7 +142,7 @@ Hardcoding secrets in source code, Dockerfiles, or environment files causes cata
    "secrets": [
      {
        "name": "DB_PASSWORD",
-       "valueFrom": "arn:aws:secretsmanager:ap-southeast-1:858093958225:secret:app/production/db-password-AbCdEf"
+       "valueFrom": "arn:aws:secretsmanager:ap-southeast-2:858093958225:secret:app/production/db-password-AbCdEf"
      }
    ]
    ```

@@ -13,7 +13,7 @@ permissions:
   actions: read         # Read workflow run info for CodeQL action
 
 env:
-  AWS_REGION: "ap-southeast-1"
+  AWS_REGION: "ap-southeast-2"
   AWS_OIDC_ROLE_ARN: "arn:aws:iam::858093958225:role/indico-api-production-cicd-deployer-role"
   ECR_REPOSITORY: "indico-api-production-api"
 
