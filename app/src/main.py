@@ -1,28 +1,25 @@
+import logging
 import os
 import sys
 
 # Add script directory to sys.path so 'config' can be imported regardless of execution CWD
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-import uvicorn
-import logging
-from config import settings
+from config import settings  # noqa: E402
+from fastapi import FastAPI, Request, Response  # noqa: E402
+from pydantic import BaseModel, Field  # noqa: E402
+import uvicorn  # noqa: E402
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("api.main")
 
 app = FastAPI(
     title=settings.app_name,
     version="1.0.0",
     docs_url=None if settings.environment == "production" else "/docs",
-    redoc_url=None
+    redoc_url=None,
 )
+
 
 # Enforce Security Headers Middleware
 @app.middleware("http")
@@ -36,18 +33,18 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
+
 class ItemRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_\-\s]+$")
     description: str = Field("", max_length=500)
     quantity: int = Field(..., ge=1, le=10000)
 
+
 @app.get("/healthz", status_code=200)
 def health_check():
     """Liveness probe for AWS Application Load Balancer target group"""
-    return {
-        "status": "healthy",
-        "environment": settings.environment
-    }
+    return {"status": "healthy", "environment": settings.environment}
+
 
 @app.get("/api/v1/info")
 def get_service_info():
@@ -55,17 +52,16 @@ def get_service_info():
     return {
         "service": settings.app_name,
         "environment": settings.environment,
-        "database_connected": bool(settings.db_password is not None)
+        "database_connected": bool(settings.db_password is not None),
     }
+
 
 @app.post("/api/v1/items", status_code=201)
 def create_item(payload: ItemRequest):
     """Secure endpoint with strict input sanitization preventing injection attacks"""
     logger.info(f"Item created successfully: {payload.name}")
-    return {
-        "message": "Item registered successfully",
-        "item": payload.model_dump()
-    }
+    return {"message": "Item registered successfully", "item": payload.model_dump()}
+
 
 if __name__ == "__main__":
     uvicorn.run(
@@ -73,5 +69,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=settings.port,
         reload=False,
-        server_header=False # Omit Server header to prevent fingerprinting
+        server_header=False,  # Omit Server header to prevent fingerprinting
     )
