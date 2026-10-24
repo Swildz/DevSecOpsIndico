@@ -226,10 +226,12 @@ Full end-to-end verification and incident resolution documentation is published 
 ### Live Production Endpoints
 - **Application Load Balancer URL**: `indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com`
 - **Liveness Health Check**: `https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com/healthz`
+![Healthz Liveness Probe Live Response](screenshots/03-aws-alb-healthz-verified.png)
   ```json
   {"status":"healthy","environment":"production"}
   ```
 - **Service Info API**: `https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com/api/v1/info`
+![Service Info API](screenshots/02-aws-alb-api-info-verified.png)
   ```json
   {
     "service": "indico-devsecops-backend-api",
@@ -244,4 +246,5 @@ Full end-to-end verification and incident resolution documentation is published 
   - `aws_wafv2_web_acl.main`: Attached and inspecting traffic
   - `aws_ecs_service.app`: FARGATE running 2/2 healthy tasks
   - `aws_lb_target_group.app`: Target health `healthy` across both AZs (`ap-southeast-2a`, `ap-southeast-2b`)
+
 
