@@ -63,3 +63,7 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+
+#File
+DevSecOps_Engineer_Home_Test_Submission.*
+*scripts*

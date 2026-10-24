@@ -55,9 +55,14 @@ devsecops-home-test/
 │   ├── vulnerability-policy.md            # Severity SLAs and unpatched CVE handling policy
 │   ├── incident-response.md               # Playbooks for pipeline failure, secret issue, and compromised IAM
 │   ├── scenarios-remediation.md           # Deep dives for Task 3 Scenarios A, B, and C
+│   └── dast-and-owasp.md                  # Task 6 DAST & OWASP Top 10 API Security mitigation
 ├── evidence/
 │   ├── scan-results.md                    # Complete tool scan logs (Gitleaks, Semgrep, Trivy, Checkov, ZAP)
-│   └── live-deployment-and-troubleshooting.md # Live AWS deployment proof, RCA of all solved issues & teardown guide
+│   ├── live-deployment-and-troubleshooting.md # Live AWS deployment proof, RCA of all solved issues & teardown guide
+│   └── screenshots/                       # 7 authentic live AWS & CI/CD verification screenshots
+├── scripts/
+│   └── generate_submission_docs.py        # Automated generator for Word (.docx) & PDF (.pdf) submissions
+├── DevSecOps_Engineer_Home_Test_Submission.md # Master formal examination submission answering all prompt tasks
 └── sonar-project.properties               # SonarQube Scanner project configuration
 ```
 
@@ -233,6 +238,7 @@ docker stop test-api && docker rm test-api
 
 | Task / Scenario | Deliverable Document | Core Solution / Key Takeaway |
 | :--- | :--- | :--- |
+| **Complete Assessment Submission** | [DevSecOps_Engineer_Home_Test_Submission.md](file:///d:/2026%20-%20REC/Indico/DevSecOps_Engineer_Home_Test_Submission.md) | Master formal examination submission answering all questions from the Home Test prompt. |
 | **Task 1: AWS Architecture** | [architecture-design.md](file:///d:/2026%20-%20REC/Indico/architecture/architecture-design.md) | Multi-AZ VPC, ALB + WAF, Fargate in private subnets, PrivateLink endpoints, zero public IPs. |
 | **Task 2: CI/CD Pipeline** | [.gitlab-ci.yml](file:///d:/2026%20-%20REC/Indico/.gitlab-ci.yml) / [devsecops-pipeline.yml](file:///d:/2026%20-%20REC/Indico/.github/workflows/devsecops-pipeline.yml) | 10 automated stages (DevSecOps + Multi-Environment Promotion), SonarCloud gate, OIDC AWS authentication. |
 | **Task 3: Scenario A (IAM `*`)** | [scenarios-remediation.md](file:///d:/2026%20-%20REC/Indico/security/scenarios-remediation.md) | Prevent account takeover by scoping resource ARNs, separating CI/CD from runtime, and enforcing OIDC. |
@@ -245,6 +251,20 @@ docker stop test-api && docker rm test-api
 | **Task 6: DAST & OWASP Top 10** | [dast-and-owasp.md](file:///d:/2026%20-%20REC/Indico/security/dast-and-owasp.md) | OWASP ZAP baseline + active scans in ephemeral test container, bearer auth injection, mitigation of BOLA, SQLi, and misconfig. |
 | **Scan Execution Evidence** | [scan-results.md](file:///d:/2026%20-%20REC/Indico/evidence/scan-results.md) | Complete logs for Gitleaks, Semgrep, Trivy, Checkov, and OWASP ZAP showing passed gates. |
 | **Live Deployment & RCA** | [live-deployment-and-troubleshooting.md](file:///d:/2026%20-%20REC/Indico/evidence/live-deployment-and-troubleshooting.md) | Full proof of live AWS deployment, root-cause analysis (RCA) of all solved challenges, and teardown steps. |
+
+### Evidence of Tests and Scans Performed
+
+All security scanners and deployment gates are verified active and passing with authentic execution evidence:
+- **Secret Scanning (Gitleaks v8.18):** 11 commits scanned, 0 leaks detected (Exit Code: 0).
+- **SAST & Quality Gate (SonarCloud):** Project `Swildz_DevSecOpsIndico` Quality Gate: **PASSED** (`Sonar way`), Rating **A**, 0 Bugs, 0 Vulnerabilities, 0 Security Hotspots.
+- **SAST OWASP Top 10 (Semgrep):** Analyzed Python source files, 0 blocking findings (Exit Code: 0).
+- **SCA Dependencies (Trivy fs v0.49):** Scanned `requirements.txt`, 0 Critical, 0 High vulnerabilities.
+- **IaC Security (Checkov v3.2):** Scanned `terraform/`, 26 passed checks, 0 failed, 0 blockers.
+- **Container Vulnerability Scan (Trivy image):** Scanned `indico-api:latest`, 0 Critical OS vulnerabilities.
+- **DAST Baseline Scan (OWASP ZAP):** Tested against ephemeral container & live AWS ALB, 0 High/Critical findings.
+- **Live AWS Production Deployment:** Fargate cluster `indico-api-production-cluster` active with 2/2 healthy tasks, ALB DNS `indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com` returning HTTP 200 on `/healthz` and `/api/v1/info`.
+
+![GitHub Actions 10 Stages All Green](evidence/screenshots/01-github-actions-all-stages-green.png)
 
 ---
 
