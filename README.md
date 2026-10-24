@@ -14,7 +14,7 @@ This repository contains the complete implementation and documentation for the *
 ## Repository Structure
 
 ```
-devsecops-home-test/
+DevSecOpsIndico/
 ├── README.md                              # Main technical documentation & quickstart
 ├── Jenkinsfile                            # Production Jenkins Declarative DevSecOps Pipeline
 ├── .gitlab-ci.yml                         # Production GitLab CI/CD Pipeline
