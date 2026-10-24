@@ -39,7 +39,8 @@ jobs:
 
       - name: Execute Code Formatting and Syntax Checks
         run: |
-          black --check app/src/ || black app/src/ --diff
+          python -m py_compile app/src/main.py app/src/config.py
+          black --check app/src/ || true
           flake8 app/src/ --max-line-length=120 --extend-ignore=E402,W503
 
   # ----------------------------------------------------------------------------
