@@ -91,16 +91,6 @@ The pipeline automates security verification at every step of the release cycle 
 
 ![The 10-Stage Security & Multi-Environment Promotion Pipeline](architecture/pipeline-stages.png)
 
-```
-[1. Source Validation] ──> [2. Secret Scan] ──> [3. SAST & Gate] ──> [4. SCA Scan] ──> [5. IaC Scan]
-     (Flake8/Black)          (Gitleaks)      (SonarQube & Semgrep)    (Trivy fs)          (Checkov)
-                                                                                              │
-     ┌────────────────────────────────────────────────────────────────────────────────────────┘
-     ▼
-[6. Docker Build] ───> [7. Container Scan] ───> [8. DAST Scan] ───> [9. Staging Deploy] ───> [10. Prod Deploy]
-  (Multi-Stage)            (Trivy image)          (OWASP ZAP)          (Pre-Prod Test)        (Manual Gate)
-```
-
 ### Security Gates & Enforcement Rules:
 - **Gate 1: Secret Scanning (Gitleaks):** Zero tolerance. Fails on any detected passwords, private keys, or AWS access keys.
 - **Gate 2: SAST & Quality Gate (SonarCloud & Semgrep):** Fails if SonarCloud Quality Gate fails (`sonar.qualitygate.wait=true`) or on `HIGH`/`CRITICAL` CWE findings.
