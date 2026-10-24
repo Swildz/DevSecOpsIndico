@@ -14,8 +14,7 @@ resource "aws_ecr_repository" "app" {
   }
 
   encryption_configuration {
-    encryption_type = "KMS"
-    kms_key         = aws_kms_key.app_cmk.arn
+    encryption_type = "AES256"
   }
 
   tags = {
@@ -80,7 +79,6 @@ resource "aws_ecs_cluster" "main" {
 resource "aws_cloudwatch_log_group" "ecs_app_logs" {
   name              = "/ecs/${var.project_name}-${var.environment}"
   retention_in_days = 90
-  kms_key_id        = aws_kms_key.app_cmk.arn
 
   tags = {
     Name = "${var.project_name}-${var.environment}-ecs-logs"

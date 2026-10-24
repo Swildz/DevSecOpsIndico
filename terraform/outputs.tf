@@ -28,8 +28,8 @@ output "ecr_repository_url" {
 }
 
 output "kms_cmk_arn" {
-  description = "ARN of the Customer Managed Key used for data encryption"
-  value       = aws_kms_key.app_cmk.arn
+  description = "Encryption mechanism used for data (AWS-managed keys enforced by SCP)"
+  value       = "AWS-Managed Keys (AES-256 / AWS Managed KMS)"
 }
 
 output "secrets_manager_secret_arn" {

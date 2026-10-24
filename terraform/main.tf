@@ -24,16 +24,6 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-
-  default_tags {
-    tags = merge(
-      var.common_tags,
-      {
-        Environment = var.environment
-        DeployedAt  = "Terraform"
-      }
-    )
-  }
 }
 
 # Current Account and Region Data Sources

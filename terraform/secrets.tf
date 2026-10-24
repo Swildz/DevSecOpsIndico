@@ -5,7 +5,6 @@
 resource "aws_secretsmanager_secret" "db_credentials" {
   name                    = "${var.project_name}/${var.environment}/database"
   description             = "Production PostgreSQL database connection credentials"
-  kms_key_id              = aws_kms_key.app_cmk.arn
   recovery_window_in_days = 7
 
   tags = {
