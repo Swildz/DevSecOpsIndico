@@ -195,12 +195,12 @@ Scan Result: SUCCESS (Zero Critical Vulnerabilities Detected - Exit Code: 0)
 
 ## 6. Dynamic Application Security Testing (DAST - OWASP ZAP)
 
-Kami mengimplementasikan DAST melalui 3 alur eksekusi (Automated CI/CD di GitHub Actions, Live Target di AWS ECS Fargate via ALB, dan Local Developer Sandbox):
+We implement DAST across 3 distinct execution workflows (Automated CI/CD in GitHub Actions, Live Target against AWS ECS Fargate via ALB, and Local Developer Sandbox):
 
 ### 1. Automated CI/CD Execution (GitHub Actions Stage 8)
-Dijalankan secara otomatis pada runner ephemeral GitHub Actions sebelum promosi staging:
+Executed automatically on ephemeral runners in GitHub Actions prior to staging deployment:
 ```yaml
-# Stage 8: DAST Baseline Scan otomatis di GitHub Actions (.github/workflows/devsecops-pipeline.yml)
+# Stage 8: Automated DAST Baseline Scan in GitHub Actions (.github/workflows/devsecops-pipeline.yml)
 - name: Build & Run Test Backend Container
   run: |
     docker build -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} app/
@@ -216,10 +216,10 @@ Dijalankan secara otomatis pada runner ephemeral GitHub Actions sebelum promosi 
     cmd_options: "-I -a"
     artifact_name: "zap-scan-report"
 ```
-*Laporan scan diarsipkan otomatis sebagai build artifact `zap-scan-report` di GitHub Actions.*
+*Scan reports are automatically archived as the `zap-scan-report` build artifact in GitHub Actions.*
 
 ### 2. Live AWS ECS Fargate & Application Load Balancer Execution
-Memvalidasi live deployment di AWS `ap-southeast-2` terhadap ALB, TLS termination, dan AWS WAFv2:
+Validates the live AWS deployment in `ap-southeast-2` against the ALB, TLS termination, and AWS WAFv2 rules:
 ```bash
 docker run --rm -v $(pwd)/evidence:/zap/wrk:rw -t zaproxy/zap-stable:latest \
   zap-baseline.py \

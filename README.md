@@ -178,12 +178,12 @@ trivy image --exit-code 1 --severity CRITICAL indico-api:latest
 
 #### E. Execute DAST Scan (OWASP ZAP)
 
-Kami menyediakan 3 opsi eksekusi DAST yang selaras dengan implementasi CI/CD GitHub Actions dan AWS ECS kami:
+We provide 3 execution modes aligned with our deployed GitHub Actions CI/CD and AWS ECS architecture:
 
 ##### 1. Automated CI/CD Pipeline (GitHub Actions - Stage 8)
-Pada pipeline CI/CD GitHub Actions ([.github/workflows/devsecops-pipeline.yml](.github/workflows/devsecops-pipeline.yml)), DAST dijalankan secara otomatis pada runner ephemeral sebelum deployment ke staging:
+In the GitHub Actions CI/CD pipeline ([.github/workflows/devsecops-pipeline.yml](.github/workflows/devsecops-pipeline.yml)), DAST runs automatically on an ephemeral runner sandbox before staging promotion:
 ```yaml
-# Stage 8: DAST Baseline Scan otomatis di GitHub Actions
+# Stage 8: Automated DAST Baseline Scan in GitHub Actions
 - name: Build & Run Test Backend Container
   run: |
     docker build -t indico-api:${{ github.sha }} app/
@@ -199,12 +199,12 @@ Pada pipeline CI/CD GitHub Actions ([.github/workflows/devsecops-pipeline.yml](.
     cmd_options: "-I -a"
     artifact_name: "zap-scan-report"
 ```
-*Hasil laporan scan otomatis diarsipkan dan dapat diunduh sebagai GitHub Actions Artifact `zap-scan-report`.*
+*Scan reports are automatically archived and downloadable as the GitHub Actions `zap-scan-report` build artifact.*
 
 ##### 2. Live AWS ECS Fargate & Application Load Balancer Endpoint Scan
-Untuk memverifikasi runtime live di AWS (termasuk validasi HTTPS TLS termination, HTTP Security Headers, dan evaluasi proteksi AWS WAFv2 terhadap endpoint ECS Fargate):
+To validate the live AWS runtime environment (verifying HTTPS TLS termination, HTTP Security Headers, and AWS WAFv2 rules protecting the ECS Fargate service):
 ```bash
-# Jalankan OWASP ZAP terhadap live AWS Application Load Balancer endpoint
+# Execute OWASP ZAP baseline scan against the live AWS Application Load Balancer endpoint
 docker run --rm -v $(pwd)/evidence:/zap/wrk:rw -t zaproxy/zap-stable:latest \
   zap-baseline.py \
   -t https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com \
@@ -214,16 +214,16 @@ docker run --rm -v $(pwd)/evidence:/zap/wrk:rw -t zaproxy/zap-stable:latest \
 ```
 
 ##### 3. Local Developer Pre-Commit Verification (Docker Sandbox)
-Bagi developer yang ingin menjalankan pengujian DAST lokal sebelum membuat commit / PR ke repository:
+For developers verifying changes locally before pushing code or opening a pull request:
 ```bash
-# 1. Jalankan container secara lokal
+# 1. Start the containerized API locally
 docker run -d --name test-api -p 8080:8080 indico-api:latest
 
-# 2. Eksekusi OWASP ZAP baseline scan terhadap localhost
+# 2. Run OWASP ZAP baseline scan against localhost
 docker run --rm -v $(pwd)/evidence:/zap/wrk:rw -t zaproxy/zap-stable:latest \
   zap-baseline.py -t http://host.docker.internal:8080 -r zap-report.html -I
 
-# 3. Hentikan dan bersihkan container uji
+# 3. Clean up the test container
 docker stop test-api && docker rm test-api
 ```
 
