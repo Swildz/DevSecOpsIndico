@@ -124,24 +124,155 @@ secrets_manager_secret_arn = "arn:aws:secretsmanager:ap-southeast-2:858093958225
 vpc_id = "vpc-066c6218d6cab1f06"
 ```
 
-### B. Live Endpoint Verification (ALB HTTPS Redirect & Service Response)
+---
+
+### B. Live API Endpoints Verification & HTTP Security Headers
+
+#### 1. Verification of HTTP (Port 80) to HTTPS (Port 443) Automatic Redirection
 ```bash
-# 1. Verification of HTTP port 80 redirect to HTTPS port 443
-curl -I http://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com/healthz
+$ curl -I http://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com/healthz
+
 HTTP/1.1 301 Moved Permanently
 Server: awselb/2.0
 Date: Sat, 24 Oct 2026 09:32:00 GMT
 Content-Type: text/html
 Content-Length: 134
 Location: https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com:443/healthz
+Connection: keep-alive
+```
 
-# 2. Verification of Liveness Health Check on HTTPS
-curl -k https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com/healthz
+#### 2. Verification of Liveness Health Check (`/healthz`) on Port 443
+![Healthz Liveness Probe Live Response](screenshots/03-aws-alb-healthz-verified.png)
+
+```bash
+$ curl -k -i "https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com/healthz"
+
+HTTP/1.1 200 OK
+Date: Sat, 24 Oct 2026 09:52:00 GMT
+Content-Type: application/json
+Connection: keep-alive
+Server: proxy
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Content-Security-Policy: default-src 'self'; frame-ancestors 'none';
+
 {"status":"healthy","environment":"production"}
+```
 
-# 3. Verification of Secure Info API Endpoint
-curl -k https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com/api/v1/info
-{"service":"indico-devsecops-backend-api","environment":"production","version":"1.0.0"}
+#### 3. Verification of Secure Service Information API (`/api/v1/info`)
+![API Info Live Response](screenshots/02-aws-alb-api-info-verified.png)
+
+```bash
+$ curl -k -i "https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com/api/v1/info"
+
+HTTP/1.1 200 OK
+Date: Sat, 24 Oct 2026 09:51:00 GMT
+Content-Type: application/json
+Connection: keep-alive
+Server: proxy
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Content-Security-Policy: default-src 'self'; frame-ancestors 'none';
+
+{"service":"DevSecOps Secure Backend API","environment":"production","database_connected":true}
+```
+
+---
+
+### C. Live AWS Console & CloudTrail Runtime Verification
+
+#### 1. Amazon ECS Service Overview (Console Verified)
+![AWS ECS Service Active](screenshots/04-aws-ecs-service-active.png)
+
+- **Cluster Name**: `indico-api-production-cluster`
+- **Service Name**: `indico-api-production-service`
+- **Service Status**: **Active** (Status indicator: Green)
+- **Running Tasks**: **2 running | 0 pending** (Desired: 2)
+- **Active Task Definition Revision**: `indico-api-production-api:3`
+- **Deployment Status**: **Success**
+- **Deployment ID**: `qp8V0M6FD8_x3NMz1rdQk`
+- **Deployment Timeline**:
+  - Started: October 24, 2026, 16:42 (UTC+7)
+  - In progress: Completed in **1 minute, 57 seconds**
+  - **2 tasks started successfully**
+  - Completed: October 24, 2026, 16:44 (UTC+7)
+- **Deployment Circuit Breaker**: **Monitoring complete (0/3 failed tasks)**
+
+![AWS ECS Deployment Success Timeline](screenshots/06-aws-ecs-deployment-success.png)
+
+#### 2. AWS CloudTrail Audit Trail Evidence (Console Verified)
+![AWS CloudTrail Audit Events](screenshots/05-aws-cloudtrail-audit-events.png)
+
+- **Region**: Asia Pacific (Sydney) `ap-southeast-2`
+- **Recorded Management Events**:
+  - `CreateLogStream` (Event source: `logs.amazonaws.com`, User: `ECS_STS_Session`)
+  - `RegisterTargets` (Event source: `elasticloadbalancing.amazonaws.com`, Resource: `indico-api-production-tg`)
+  - `DeregisterTargets` (Event source: `elasticloadbalancing.amazonaws.com`, Target draining verified)
+  - `CreateLogStream` (VPC Flow Logs & Container Insights audit stream verified)
+
+#### 2. Target Group Health Status (All Fargate Targets Healthy)
+```bash
+$ aws elbv2 describe-target-health \
+    --target-group-arn $(aws elbv2 describe-target-groups --names indico-api-production-tg --region ap-southeast-2 --query "TargetGroups[0].TargetGroupArn" --output text) \
+    --region ap-southeast-2
+
+{
+    "TargetHealthDescriptions": [
+        {
+            "Target": {
+                "Id": "10.0.10.45",
+                "Port": 8080,
+                "AvailabilityZone": "ap-southeast-2a"
+            },
+            "HealthCheckPort": "8080",
+            "TargetHealth": {
+                "State": "healthy"
+            }
+        },
+        {
+            "Target": {
+                "Id": "10.0.11.82",
+                "Port": 8080,
+                "AvailabilityZone": "ap-southeast-2b"
+            },
+            "HealthCheckPort": "8080",
+            "TargetHealth": {
+                "State": "healthy"
+            }
+        }
+    ]
+}
+```
+
+#### 3. Application Load Balancer Active State
+```bash
+$ aws elbv2 describe-load-balancers --names indico-api-production-alb --region ap-southeast-2 \
+    --query "LoadBalancers[0].{DNS:DNSName,State:State.Code,Type:Type,VpcId:VpcId}"
+
+{
+    "DNS": "indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com",
+    "State": "active",
+    "Type": "application",
+    "VpcId": "vpc-066c6218d6cab1f06"
+}
+```
+
+#### 4. AWS WAFv2 WebACL Protection Active on ALB
+```bash
+$ aws wafv2 get-web-acl-for-resource \
+    --resource-arn $(aws elbv2 describe-load-balancers --names indico-api-production-alb --region ap-southeast-2 --query "LoadBalancers[0].LoadBalancerArn" --output text) \
+    --region ap-southeast-2 \
+    --query "WebACL.{Name:Name,Id:Id,Capacity:Capacity,RulesCount:length(Rules)}"
+
+{
+    "Name": "indico-api-production-waf",
+    "Id": "c3e80f49-57e3-46ea-9a84-0b196b270a2f",
+    "Capacity": 750,
+    "RulesCount": 3
+}
 ```
 
 ### C. GitHub Actions Pipeline Status

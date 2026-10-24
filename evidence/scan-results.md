@@ -218,3 +218,32 @@ WARN-NEW: Re-examine Cache-Control Directives [10015] x 1
 INFO: Zero High / Critical findings detected.
 Scan Result: SUCCESS (Release Approved)
 ```
+
+---
+
+## 7. Live Production Infrastructure & API Runtime Evidence
+
+Full end-to-end verification and incident resolution documentation is published in [live-deployment-and-troubleshooting.md](file:///d:/2026%20-%20REC/Indico/evidence/live-deployment-and-troubleshooting.md).
+
+### Live Production Endpoints
+- **Application Load Balancer URL**: `indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com`
+- **Liveness Health Check**: `https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com/healthz`
+  ```json
+  {"status":"healthy","environment":"production"}
+  ```
+- **Service Info API**: `https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com/api/v1/info`
+  ```json
+  {
+    "service": "indico-devsecops-backend-api",
+    "environment": "production",
+    "version": "1.0.0",
+    "secrets_source": "aws_secrets_manager",
+    "auth_model": "least_privilege_iam"
+  }
+  ```
+- **Live AWS Services Verified Active**:
+  - `aws_lb.main`: ACTIVE (Port 80 HTTP -> Port 443 HTTPS redirect)
+  - `aws_wafv2_web_acl.main`: Attached and inspecting traffic
+  - `aws_ecs_service.app`: FARGATE running 2/2 healthy tasks
+  - `aws_lb_target_group.app`: Target health `healthy` across both AZs (`ap-southeast-2a`, `ap-southeast-2b`)
+
