@@ -65,22 +65,37 @@ jobs:
           GITLEAKS_CONFIG: .gitleaks.toml
 
   # ----------------------------------------------------------------------------
-  # Stage 3: SAST - Static Application Security Testing (Semgrep)
-  # Gate: Fails on High/Critical findings
+  # Stage 3: SAST - Static Application Security Testing (SonarQube & Semgrep)
+  # Gate: Fails on High/Critical vulnerabilities & Quality Gate violation
   # ----------------------------------------------------------------------------
   sast:
-    name: "Stage 3: SAST (Semgrep)"
+    name: "Stage 3: SAST (SonarQube & Semgrep)"
     runs-on: ubuntu-latest
     needs: secret-scan
-    container:
-      image: returntocorp/semgrep:latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Code (Full History for SonarQube)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Execute Semgrep SAST Scan
+      - name: SonarCloud SAST Analysis
+        if: ${{ secrets.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: "https://sonarcloud.io"
+
+      - name: SonarCloud Quality Gate Check
+        if: ${{ secrets.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Execute Semgrep SAST Scan (OWASP Top 10 Security Rules)
         run: |
-          semgrep scan --config=auto --error --severity=ERROR --sarif --output=semgrep.sarif app/
+          docker run --rm -v "${{ github.workspace }}:/src" returntocorp/semgrep:latest \
+            semgrep scan --config=auto --error --severity=ERROR --sarif --output=/src/semgrep.sarif /src/app/
 
       - name: Upload SAST SARIF Report
         uses: github/codeql-action/upload-sarif@v3
@@ -237,12 +252,52 @@ jobs:
           fail_action: false
 
   # ----------------------------------------------------------------------------
-  # Stage 9: Deployment with AWS IAM OIDC (Manual Approval for Production)
   # ----------------------------------------------------------------------------
-  deploy-production:
-    name: "Stage 9: Deploy to AWS Production ECS"
+  # Stage 9: Deploy to Staging (Automated Pre-Production Promotion)
+  # ----------------------------------------------------------------------------
+  deploy-staging:
+    name: "Stage 9: Deploy to Staging Environment"
     runs-on: ubuntu-latest
     needs: [container-build-and-scan, dast]
+    environment:
+      name: staging
+      url: https://staging-api.example.com
+    steps:
+      - name: Configure AWS Credentials via OIDC (No Static Keys!)
+        id: aws-auth
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          role-session-name: GitHubActions-StagingDeploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: steps.aws-auth.outcome == 'success'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Tag and Push Image to ECR
+        if: steps.aws-auth.outcome == 'success'
+        run: |
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:staging-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:staging-latest
+
+      - name: Trigger Staging ECS Rolling Update
+        if: steps.aws-auth.outcome == 'success'
+        run: |
+          echo "===> Deploying validated immutable image ${{ github.sha }} to Staging..."
+          aws ecs update-service --cluster indico-api-staging-cluster --service indico-api-staging-service --force-new-deployment || echo "Staging cluster optional or pending provisioning"
+
+  # ----------------------------------------------------------------------------
+  # Stage 10: Production Deployment (Manual Approval Gate & Immutable Artifact)
+  # ----------------------------------------------------------------------------
+  deploy-production:
+    name: "Stage 10: Deploy to Production (Manual Approval Gate)"
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
@@ -262,13 +317,16 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Tag and Push Image to ECR
+      - name: Tag Image as Production Release
         if: steps.aws-auth.outcome == 'success'
         run: |
-          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          echo "===> Promoting Staging image ${{ github.sha }} to Production..."
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:prod-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:prod-latest
 
-      - name: Deploy Task Definition to Amazon ECS Fargate
+      - name: Deploy Task Definition to Production ECS Fargate
         if: steps.aws-auth.outcome == 'success'
         run: |
+          echo "===> Triggering zero-downtime rolling deployment in Production..."
           aws ecs update-service --cluster indico-api-production-cluster --service indico-api-production-service --force-new-deployment
+
