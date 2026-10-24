@@ -13,7 +13,7 @@ isolated_db_subnet_cidrs = ["10.0.20.0/24", "10.0.21.0/24"]
 container_port     = 8080
 desired_task_count = 2
 
-github_repository  = "indico-org/devsecops-backend-api"
+github_repository  = "Swildz/DevSecOpsIndico"
 
 common_tags = {
   Project      = "indico-api"

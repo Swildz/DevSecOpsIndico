@@ -230,4 +230,4 @@ docker stop test-api && docker rm test-api
 ## 7. Security Compliance & Redaction Notice
 
 - **Zero Plaintext Secrets:** No real AWS access keys, passwords, private certificates, or customer tokens are embedded in this repository.
-- **Redacted Demonstration Data:** All account IDs (`123456789012`), domain names (`example.com`), and credentials use sanitized RFC 2606 placeholders or dynamic secret references.
+- **Redacted Demonstration Data:** All account IDs (`858093958225`), domain names (`example.com`), and credentials use sanitized RFC 2606 placeholders or dynamic secret references.

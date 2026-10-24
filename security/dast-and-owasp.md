@@ -44,7 +44,7 @@ Dynamic Application Security Testing (DAST) inspects the compiled, running appli
     --network test-net \
     -e ENVIRONMENT=staging \
     -e DB_CONFIG='{"host":"mock-db","port":5432,"username":"test","password":"test-mock-password"}' \
-    -p 8080:8080 app-backend-api:${CI_COMMIT_SHA}
+    -p 8080:8080 indico-api-production-api:${CI_COMMIT_SHA}
   ```
 - **Mocked / Isolated Data Layer:**
   The container connects to an in-memory mock database (e.g., PostgreSQL container seeded with synthetic dummy data). It has **zero connectivity** to real user data or production databases.

@@ -67,7 +67,7 @@ To diagnose and isolate the issue **without granting broad administrator permiss
 Run the following targeted AWS CLI command (requiring only `ecs:DescribeTasks` permission):
 ```bash
 aws ecs describe-tasks \
-  --cluster app-production-cluster \
+  --cluster indico-api-production-cluster \
   --tasks <task-id> \
   --query "tasks[0].containers[0].[exitCode,reason]" \
   --output text
@@ -85,7 +85,7 @@ aws ecs describe-tasks \
     {
       "Effect": "Allow",
       "Action": ["secretsmanager:GetSecretValue"],
-      "Resource": "arn:aws:secretsmanager:ap-southeast-1:123456789012:secret:app/production/database-*"
+      "Resource": "arn:aws:secretsmanager:ap-southeast-1:858093958225:secret:app/production/database-*"
     }
     ```
 
@@ -95,7 +95,7 @@ aws ecs describe-tasks \
   ```json
   {
     "Effect": "Allow",
-    "Principal": { "AWS": "arn:aws:iam::123456789012:role/app-production-ecs-execution-role" },
+    "Principal": { "AWS": "arn:aws:iam::858093958225:role/app-production-ecs-execution-role" },
     "Action": ["kms:Decrypt", "kms:DescribeKey"],
     "Resource": "*",
     "Condition": {

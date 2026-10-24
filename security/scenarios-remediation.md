@@ -32,8 +32,8 @@ A secure deployment model enforces four core principles:
 1. **Resource-Level ARNs:** Restrict actions to explicitly named target clusters, services, and repositories:
    ```hcl
    Resource = [
-     "arn:aws:ecs:ap-southeast-1:123456789012:service/app-production-cluster/app-backend-api",
-     "arn:aws:ecr:ap-southeast-1:123456789012:repository/indico-api-production-api"
+     "arn:aws:ecs:ap-southeast-1:858093958225:service/indico-api-production-cluster/indico-api-production-service",
+     "arn:aws:ecr:ap-southeast-1:858093958225:repository/indico-api-production-api"
    ]
    ```
 2. **Separation of Deployment vs. Application Runtime Roles:**
@@ -50,7 +50,7 @@ A secure deployment model enforces four core principles:
          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
        },
        "StringLike": {
-         "token.actions.githubusercontent.com:sub": "repo:indico-org/devsecops-backend-api:ref:refs/heads/main"
+         "token.actions.githubusercontent.com:sub": "repo:Swildz/DevSecOpsIndico:ref:refs/heads/main"
        }
      }
      ```
@@ -61,8 +61,8 @@ A secure deployment model enforces four core principles:
        "Effect": "Allow",
        "Action": "iam:PassRole",
        "Resource": [
-         "arn:aws:iam::123456789012:role/app-ecs-execution-role",
-         "arn:aws:iam::123456789012:role/app-ecs-task-role"
+         "arn:aws:iam::858093958225:role/app-ecs-execution-role",
+         "arn:aws:iam::858093958225:role/app-ecs-task-role"
        ],
        "Condition": {
          "StringEquals": {

@@ -13,8 +13,8 @@ permissions:
 
 env:
   AWS_REGION: "ap-southeast-1"
-  AWS_OIDC_ROLE_ARN: "arn:aws:iam::123456789012:role/github-actions-fargate-deployer"
-  ECR_REPOSITORY: "app-backend-api"
+  AWS_OIDC_ROLE_ARN: "arn:aws:iam::858093958225:role/github-actions-fargate-deployer"
+  ECR_REPOSITORY: "indico-api-production-api"
 
 jobs:
   # ----------------------------------------------------------------------------
@@ -236,4 +236,4 @@ jobs:
 
       - name: Deploy Task Definition to Amazon ECS Fargate
         run: |
-          aws ecs update-service --cluster app-production-cluster --service app-backend-api --force-new-deployment
+          aws ecs update-service --cluster indico-api-production-cluster --service indico-api-production-service --force-new-deployment

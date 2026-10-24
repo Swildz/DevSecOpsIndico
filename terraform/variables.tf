@@ -69,7 +69,7 @@ variable "certificate_arn" {
 variable "github_repository" {
   description = "GitHub repository formatted as 'owner/repo' for OIDC trust condition"
   type        = string
-  default     = "indico-org/devsecops-backend-api"
+  default     = "Swildz/DevSecOpsIndico"
 }
 
 variable "common_tags" {

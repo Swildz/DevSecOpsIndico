@@ -22,7 +22,7 @@ variables:
   APP_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
   AWS_DEFAULT_REGION: "ap-southeast-1"
   # OIDC Role ARN (Short-lived temporary STS credentials, NO static keys!)
-  AWS_ROLE_ARN: "arn:aws:iam::123456789012:role/gitlab-ci-fargate-deployer"
+  AWS_ROLE_ARN: "arn:aws:iam::858093958225:role/gitlab-ci-fargate-deployer"
 
 default:
   interruptible: true
@@ -236,7 +236,7 @@ deploy-production:
     - export AWS_ACCESS_KEY_ID=$(echo "$STS_CREDS" | cut -f1)
     - export AWS_SECRET_ACCESS_KEY=$(echo "$STS_CREDS" | cut -f2)
     - export AWS_SESSION_TOKEN=$(echo "$STS_CREDS" | cut -f3)
-    - aws ecs update-service --cluster app-production-cluster --service app-backend-api --force-new-deployment
+    - aws ecs update-service --cluster indico-api-production-cluster --service indico-api-production-service --force-new-deployment
   environment:
     name: production
     url: https://api.example.com
