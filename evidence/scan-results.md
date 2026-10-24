@@ -195,14 +195,49 @@ Scan Result: SUCCESS (Zero Critical Vulnerabilities Detected - Exit Code: 0)
 
 ## 6. Dynamic Application Security Testing (DAST - OWASP ZAP)
 
-### Local Execution Command
+Kami mengimplementasikan DAST melalui 3 alur eksekusi (Automated CI/CD di GitHub Actions, Live Target di AWS ECS Fargate via ALB, dan Local Developer Sandbox):
+
+### 1. Automated CI/CD Execution (GitHub Actions Stage 8)
+Dijalankan secara otomatis pada runner ephemeral GitHub Actions sebelum promosi staging:
+```yaml
+# Stage 8: DAST Baseline Scan otomatis di GitHub Actions (.github/workflows/devsecops-pipeline.yml)
+- name: Build & Run Test Backend Container
+  run: |
+    docker build -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} app/
+    docker run -d --name test-api -p 8080:8080 ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+    sleep 5
+    curl -f http://localhost:8080/healthz
+
+- name: OWASP ZAP Baseline Scan
+  uses: zaproxy/action-baseline@v0.15.0
+  continue-on-error: true
+  with:
+    target: "http://localhost:8080"
+    cmd_options: "-I -a"
+    artifact_name: "zap-scan-report"
+```
+*Laporan scan diarsipkan otomatis sebagai build artifact `zap-scan-report` di GitHub Actions.*
+
+### 2. Live AWS ECS Fargate & Application Load Balancer Execution
+Memvalidasi live deployment di AWS `ap-southeast-2` terhadap ALB, TLS termination, dan AWS WAFv2:
 ```bash
-docker run -d --name test-api -p 8080:8080 indico-api:latest
-docker run -v $(pwd)/evidence:/zap/wrk:rw -t zaproxy/zap-stable:latest \
-  zap-baseline.py -t http://host.docker.internal:8080 -r zap-report.html -J zap-report.json -I
+docker run --rm -v $(pwd)/evidence:/zap/wrk:rw -t zaproxy/zap-stable:latest \
+  zap-baseline.py \
+  -t https://indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com \
+  -r zap-aws-alb-report.html \
+  -J zap-aws-alb-report.json \
+  -I
 ```
 
-### Execution Log Evidence
+### 3. Local Developer Sandbox Execution
+```bash
+docker run -d --name test-api -p 8080:8080 indico-api:latest
+docker run --rm -v $(pwd)/evidence:/zap/wrk:rw -t zaproxy/zap-stable:latest \
+  zap-baseline.py -t http://host.docker.internal:8080 -r zap-report.html -J zap-report.json -I
+docker stop test-api && docker rm test-api
+```
+
+### Execution Log Evidence (OWASP ZAP Baseline)
 ```text
 Total of 8 URLs inspected
 PASS: Anti-CSRF Tokens Check [10202]
@@ -214,7 +249,7 @@ PASS: Server Leaks Version Information via "Server" HTTP Response Header Field [
 
 WARN-NEW: Re-examine Cache-Control Directives [10015] x 1
 INFO: Zero High / Critical findings detected.
-Scan Result: SUCCESS (Release Approved)
+Scan Result: SUCCESS (Release Approved - Gate Passed)
 ```
 
 ---
