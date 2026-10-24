@@ -1,0 +1,33 @@
+# Ignore Git repository metadata
+.git
+.gitignore
+
+# Ignore local secrets, keys, and environment files
+.env*
+*.pem
+*.key
+*.p12
+*.crt
+*.id_rsa
+*.id_ed25519
+
+# Ignore Python bytecode, virtual environments, and cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+
+# Ignore CI/CD and Terraform artifacts
+terraform/
+.terraform/
+*.tfstate*
+evidence/
+architecture/
+.github/
+.gitlab-ci.yml
+*.md

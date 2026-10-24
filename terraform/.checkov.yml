@@ -1,0 +1,25 @@
+# Checkov IaC Security Scanner Configuration
+directory:
+  - terraform/
+
+framework:
+  - terraform
+
+# Fail immediately on HIGH and CRITICAL severity policy violations
+compact: true
+quiet: false
+output:
+  - cli
+  - json
+
+# Explicitly ensure high-risk checks are evaluated and enforced
+check:
+  - CKV_AWS_17    # Ensure RDS DB instances are not publicly accessible
+  - CKV_AWS_1     # Ensure S3 buckets have server side encryption
+  - CKV_AWS_2     # Ensure ALB redirects HTTP requests to HTTPS
+  - CKV_AWS_130   # Ensure VPC flow logging is enabled
+  - CKV_AWS_249   # Ensure ECS task definition has read-only root file system
+  - CKV_AWS_250   # Ensure ECS task definition drops all Linux capabilities
+  - CKV_AWS_51    # Ensure AWS ECR repository has image scanning enabled
+  - CKV_AWS_247   # Ensure AWS ECS cluster has container insights enabled
+  - CKV_AWS_260   # Ensure security groups do not allow ingress from 0.0.0.0/0 to administrative ports

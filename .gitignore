@@ -1,0 +1,65 @@
+# ==============================================================================
+# Git Ignore Configuration (DevSecOps Best Practice)
+# ==============================================================================
+
+# Local Terraform State & Plugins (CRITICAL: Never commit state containing secrets!)
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform/terraform.tfvars
+
+# Local Environment & Secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.id_rsa
+*.id_ed25519
+
+# Python Bytecode, Caches & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Linting Reports
+.pytest_cache/
+.coverage
+htmlcov/
+.scannerwork/
+.sonar/
+
+# OS Specific Files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo

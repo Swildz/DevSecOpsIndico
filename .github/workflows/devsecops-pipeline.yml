@@ -1,0 +1,239 @@
+name: Enterprise DevSecOps Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  id-token: write   # Mandatory for AWS OIDC authentication (STS AssumeRoleWithWebIdentity)
+  contents: read    # Read repository contents
+  security-events: write # Upload SARIF scan findings to GitHub Security tab
+
+env:
+  AWS_REGION: "ap-southeast-1"
+  AWS_OIDC_ROLE_ARN: "arn:aws:iam::123456789012:role/github-actions-fargate-deployer"
+  ECR_REPOSITORY: "app-backend-api"
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Stage 1: Source Validation & Linting
+  # ----------------------------------------------------------------------------
+  lint:
+    name: "Stage 1: Source Validation"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Linting Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black
+
+      - name: Execute Code Formatting and Syntax Checks
+        run: |
+          black --check app/src/
+          flake8 app/src/ --max-line-length=100
+
+  # ----------------------------------------------------------------------------
+  # Stage 2: Secret Scanning (Gitleaks)
+  # Gate: Fails on any detected credentials
+  # ----------------------------------------------------------------------------
+  secret-scan:
+    name: "Stage 2: Secret Scanning (Gitleaks)"
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout Code with Full History
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  # ----------------------------------------------------------------------------
+  # Stage 3: SAST - Static Application Security Testing (Semgrep)
+  # Gate: Fails on High/Critical findings
+  # ----------------------------------------------------------------------------
+  sast:
+    name: "Stage 3: SAST (Semgrep)"
+    runs-on: ubuntu-latest
+    needs: secret-scan
+    container:
+      image: returntocorp/semgrep:latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Execute Semgrep SAST Scan
+        run: |
+          semgrep scan --config=auto --error --severity=ERROR --sarif --output=semgrep.sarif app/
+
+      - name: Upload SAST SARIF Report
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
+  # ----------------------------------------------------------------------------
+  # Stage 4: SCA - Software Composition Analysis (Trivy fs)
+  # Gate: Fails on Critical/High dependency vulnerabilities
+  # ----------------------------------------------------------------------------
+  sca:
+    name: "Stage 4: SCA Dependency Scan (Trivy)"
+    runs-on: ubuntu-latest
+    needs: secret-scan
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Dependency Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "app/"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH"
+
+  # ----------------------------------------------------------------------------
+  # Stage 5: IaC Security Scanning (Checkov)
+  # Gate: Fails on open 0.0.0.0/0 database exposure or wildcard IAM
+  # ----------------------------------------------------------------------------
+  iac-scan:
+    name: "Stage 5: IaC Security Scan (Checkov)"
+    runs-on: ubuntu-latest
+    needs: secret-scan
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Checkov IaC Scanner
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform/
+          framework: terraform
+          soft_fail: false
+          output_format: cli,sarif
+          output_file_path: console,checkov.sarif
+
+      - name: Upload IaC SARIF Report
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: checkov.sarif
+
+  # ----------------------------------------------------------------------------
+  # Stage 6 & 7: Docker Build and Container Vulnerability Scan
+  # Gate: Fails on CRITICAL container vulnerabilities
+  # ----------------------------------------------------------------------------
+  container-build-and-scan:
+    name: "Stages 6 & 7: Build & Container Scan (Trivy)"
+    runs-on: ubuntu-latest
+    needs: [sast, sca, iac-scan]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image Locally (No Push)
+        uses: docker/build-push-action@v5
+        with:
+          context: app/
+          load: true
+          tags: ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Scan Built Container Image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "CRITICAL"
+
+      - name: Generate Container SARIF for Tracking
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: "${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-image.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+
+      - name: Upload Container Scan SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-image.sarif
+
+  # ----------------------------------------------------------------------------
+  # Stage 8: DAST Dynamic Security Testing (OWASP ZAP)
+  # ----------------------------------------------------------------------------
+  dast:
+    name: "Stage 8: DAST Baseline Scan (OWASP ZAP)"
+    runs-on: ubuntu-latest
+    needs: container-build-and-scan
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Test Backend Container
+        run: |
+          docker run -d --name test-api -p 8080:8080 ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          sleep 5
+          curl -f http://localhost:8080/healthz
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: "http://localhost:8080"
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          allow_issue_writing: false
+
+  # ----------------------------------------------------------------------------
+  # Stage 9: Deployment with AWS IAM OIDC (Manual Approval for Production)
+  # ----------------------------------------------------------------------------
+  deploy-production:
+    name: "Stage 9: Deploy to AWS Production ECS"
+    runs-on: ubuntu-latest
+    needs: [container-build-and-scan, dast]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://api.example.com
+    steps:
+      - name: Configure AWS Credentials via OIDC (No Static Keys!)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          role-session-name: GitHubActions-ProductionDeploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Tag and Push Image to ECR
+        run: |
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy Task Definition to Amazon ECS Fargate
+        run: |
+          aws ecs update-service --cluster app-production-cluster --service app-backend-api --force-new-deployment

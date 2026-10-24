@@ -1,0 +1,43 @@
+# Gitleaks Configuration for Enterprise DevSecOps Pipeline
+title = "Enterprise Gitleaks Configuration"
+
+[extend]
+# Inherit all default Gitleaks detection rules (AWS, GitHub, GitLab, Private Keys, etc.)
+useDefault = true
+
+[allowlist]
+description = "Global allowlists for safe patterns, tests, and false positives"
+paths = [
+  '''(?i)evidence/.*''',
+  '''(?i)tests/fixtures/.*''',
+  '''(?i).*\.example$''',
+  '''(?i)terraform/terraform\.tfvars\.example$'''
+]
+regexes = [
+  '''EXAMPLE[A-Za-z0-9_-]{16,}''',
+  '''dummy-[a-zA-Z0-9]+''',
+  '''AKIAIOSFODNN7EXAMPLE'''
+]
+
+[[rules]]
+id = "custom-aws-secret-key"
+description = "Detected Unencrypted AWS Secret Access Key"
+regex = '''(?i)(aws_secret_access_key|aws_sec_key|aws_secret)\s*[:=]\s*["']?([A-Za-z0-9/+=]{40})["']?'''
+secretGroup = 2
+keywords = [
+  "aws_secret_access_key",
+  "aws_sec_key",
+  "aws_secret"
+]
+tags = ["aws", "secret", "critical"]
+
+[[rules]]
+id = "custom-database-connection-url"
+description = "Detected Hardcoded Database Credentials in URI"
+regex = '''(?i)(postgres|postgresql|mysql)://[a-zA-Z0-9_-]+:[a-zA-Z0-9_!@#$%^&*()-+=]+@[a-zA-Z0-9.-]+:[0-9]+/'''
+keywords = [
+  "postgres://",
+  "postgresql://",
+  "mysql://"
+]
+tags = ["database", "credential", "critical"]
