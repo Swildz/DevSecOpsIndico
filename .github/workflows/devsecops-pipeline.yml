@@ -7,9 +7,10 @@ on:
     branches: [ "main" ]
 
 permissions:
-  id-token: write   # Mandatory for AWS OIDC authentication (STS AssumeRoleWithWebIdentity)
-  contents: read    # Read repository contents
+  id-token: write       # Mandatory for AWS OIDC authentication (STS AssumeRoleWithWebIdentity)
+  contents: read        # Read repository contents
   security-events: write # Upload SARIF scan findings to GitHub Security tab
+  actions: read         # Read workflow run info for CodeQL action
 
 env:
   AWS_REGION: "ap-southeast-1"
@@ -84,8 +85,16 @@ jobs:
       - name: Upload SAST SARIF Report
         uses: github/codeql-action/upload-sarif@v3
         if: always()
+        continue-on-error: true
         with:
           sarif_file: semgrep.sarif
+
+      - name: Archive SAST Report Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-report
+          path: semgrep.sarif
 
   # ----------------------------------------------------------------------------
   # Stage 4: SCA - Software Composition Analysis (Trivy fs)
@@ -126,6 +135,7 @@ jobs:
         with:
           directory: terraform/
           framework: terraform
+          config_file: terraform/.checkov.yml
           soft_fail: false
           output_format: cli,sarif
           output_file_path: console,checkov.sarif
@@ -133,8 +143,16 @@ jobs:
       - name: Upload IaC SARIF Report
         uses: github/codeql-action/upload-sarif@v3
         if: always()
+        continue-on-error: true
         with:
           sarif_file: checkov.sarif
+
+      - name: Archive Checkov Report Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkov-report
+          path: checkov.sarif
 
   # ----------------------------------------------------------------------------
   # Stage 6 & 7: Docker Build and Container Vulnerability Scan
@@ -179,8 +197,16 @@ jobs:
       - name: Upload Container Scan SARIF
         uses: github/codeql-action/upload-sarif@v3
         if: always()
+        continue-on-error: true
         with:
           sarif_file: trivy-image.sarif
+
+      - name: Archive Container Scan Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-image-report
+          path: trivy-image.sarif
 
   # ----------------------------------------------------------------------------
   # Stage 8: DAST Dynamic Security Testing (OWASP ZAP)

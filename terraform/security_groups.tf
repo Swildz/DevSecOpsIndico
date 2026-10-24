@@ -6,6 +6,7 @@
 # 1. Application Load Balancer Security Group (Public Edge)
 # ------------------------------------------------------------------------------
 resource "aws_security_group" "alb" {
+  #checkov:skip=CKV_AWS_260:Port 80 is required on public ALB to redirect traffic to HTTPS
   name        = "${var.project_name}-${var.environment}-alb-sg"
   description = "Controls HTTPS access to the public Application Load Balancer"
   vpc_id      = aws_vpc.main.id

@@ -3,7 +3,47 @@
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# 1. Application Load Balancer (Public Edge)
+# 1. TLS Certificate Provisioning (Self-Signed Bootstrap if no ACM Cert given)
+# ------------------------------------------------------------------------------
+resource "tls_private_key" "alb_self_signed" {
+  count     = var.certificate_arn == "" ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_self_signed_cert" "alb_self_signed" {
+  count           = var.certificate_arn == "" ? 1 : 0
+  private_key_pem = tls_private_key.alb_self_signed[0].private_key_pem
+
+  subject {
+    common_name  = "api.indico.internal"
+    organization = "Indico DevSecOps"
+  }
+
+  validity_period_hours = 8760
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "server_auth",
+  ]
+}
+
+resource "aws_acm_certificate" "alb_default" {
+  count            = var.certificate_arn == "" ? 1 : 0
+  private_key      = tls_private_key.alb_self_signed[0].private_key_pem
+  certificate_body = tls_self_signed_cert.alb_self_signed[0].cert_pem
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-self-signed-acm"
+  }
+}
+
+locals {
+  effective_certificate_arn = var.certificate_arn != "" ? var.certificate_arn : aws_acm_certificate.alb_default[0].arn
+}
+
+# ------------------------------------------------------------------------------
+# 2. Application Load Balancer (Public Edge)
 # ------------------------------------------------------------------------------
 resource "aws_lb" "main" {
   name               = "${var.project_name}-${var.environment}-alb"
@@ -20,7 +60,7 @@ resource "aws_lb" "main" {
 }
 
 # ------------------------------------------------------------------------------
-# 2. ALB Target Group (Pointing to ECS Fargate)
+# 3. ALB Target Group (Pointing to ECS Fargate)
 # ------------------------------------------------------------------------------
 resource "aws_lb_target_group" "app" {
   name        = "${var.project_name}-${var.environment}-tg"
@@ -47,40 +87,34 @@ resource "aws_lb_target_group" "app" {
 }
 
 # ------------------------------------------------------------------------------
-# 3. HTTP Listener (Port 80)
-# If certificate_arn is empty, forwards directly to target group.
-# If certificate_arn is provided, redirects permanently to HTTPS (port 443).
+# 4. HTTP Listener (Port 80) -> Redirects to HTTPS (Port 443)
 # ------------------------------------------------------------------------------
-resource "aws_lb_listener" "http" {
+resource "aws_lb_listener" "http_redirect" {
+  #checkov:skip=CKV_AWS_2:ALB listener enforces HTTPS redirection
   load_balancer_arn = aws_lb.main.arn
   port              = 80
   protocol          = "HTTP"
 
   default_action {
-    type             = var.certificate_arn != "" ? "redirect" : "forward"
-    target_group_arn = var.certificate_arn == "" ? aws_lb_target_group.app.arn : null
+    type = "redirect"
 
-    dynamic "redirect" {
-      for_each = var.certificate_arn != "" ? [1] : []
-      content {
-        port        = "443"
-        protocol    = "HTTPS"
-        status_code = "HTTP_301"
-      }
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
     }
   }
 }
 
 # ------------------------------------------------------------------------------
-# 4. HTTPS Listener (Port 443) - Created only when certificate_arn is specified
+# 5. HTTPS Listener (Port 443) with Modern TLS Policy
 # ------------------------------------------------------------------------------
 resource "aws_lb_listener" "https" {
-  count             = var.certificate_arn != "" ? 1 : 0
   load_balancer_arn = aws_lb.main.arn
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = var.certificate_arn
+  certificate_arn   = local.effective_certificate_arn
 
   default_action {
     type             = "forward"
@@ -89,7 +123,7 @@ resource "aws_lb_listener" "https" {
 }
 
 # ------------------------------------------------------------------------------
-# 5. AWS WAFv2 Web ACL (Edge Layer 7 Security Filtering)
+# 6. AWS WAFv2 Web ACL (Edge Layer 7 Security Filtering)
 # ------------------------------------------------------------------------------
 resource "aws_wafv2_web_acl" "api_protection" {
   name        = "${var.project_name}-${var.environment}-waf"
