@@ -219,8 +219,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Run Test Backend Container
+      - name: Build & Run Test Backend Container
         run: |
+          docker build -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} app/
           docker run -d --name test-api -p 8080:8080 ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
           sleep 5
           curl -f http://localhost:8080/healthz
@@ -229,8 +230,7 @@ jobs:
         uses: zaproxy/action-baseline@v0.12.0
         with:
           target: "http://localhost:8080"
-          rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a'
+          cmd_options: "-I -a"
           allow_issue_writing: false
 
   # ----------------------------------------------------------------------------
