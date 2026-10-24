@@ -72,6 +72,8 @@ jobs:
     name: "Stage 3: SAST (SonarQube & Semgrep)"
     runs-on: ubuntu-latest
     needs: secret-scan
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - name: Checkout Code (Full History for SonarQube)
         uses: actions/checkout@v4
@@ -79,14 +81,14 @@ jobs:
           fetch-depth: 0
 
       - name: SonarCloud SAST Analysis
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: "https://sonarcloud.io"
 
       - name: SonarCloud Quality Gate Check
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-quality-gate-action@v1
         timeout-minutes: 5
         env:
