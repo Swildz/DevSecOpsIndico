@@ -71,35 +71,11 @@ The backend API is deployed inside a dedicated, multi-AZ Amazon VPC across two A
 4. **Isolated Data Tier:** Amazon RDS PostgreSQL residing in isolated subnets with zero route to the internet, accepting traffic exclusively from the ECS task security group on port 5432.
 5. **Zero-Egress Private Backbone (AWS PrivateLink):** Interface VPC Endpoints for Amazon ECR, AWS Secrets Manager, AWS KMS, and CloudWatch Logs allow tasks to communicate with AWS APIs without internet gateways or NAT gateways.
 
-Detailed request flows, subnet allocations, and threat mitigations are documented in [architecture-design.md](file:///d:/2026%20-%20REC/Indico/architecture/architecture-design.md).
-
+### Visual Architecture Diagram
 ![Secure Containerized Backend API Architecture with AWS Fargate](architecture/architecture-diagram.png)
 
-```
-                      +---------------------------------------+
-                      |               INTERNET                |
-                      +---------------------------------------+
-                                          │ HTTPS (TLS 1.3)
-                                          ▼
-                      +---------------------------------------+
-                      |         AWS WAF (Web ACL)             |
-                      +---------------------------------------+
-                                          │
-                                          ▼
-                      +---------------------------------------+
-                      |   Application Load Balancer (ALB)     |  [Public Subnets]
-                      +---------------------------------------+
-                                          │ Ingress Port 8080 ONLY
-                                          ▼
-                      +---------------------------------------+
-                      |  Amazon ECS Fargate (Backend API)     |  [Private Subnets - No Public IPs]
-                      +---------------------------------------+
-                         │                                 │
-                         ▼ (Port 5432)                     ▼ (HTTPS 443 via PrivateLink)
-      +------------------------------------+    +------------------------------------+
-      |  Amazon RDS PostgreSQL (Multi-AZ)  |    |  VPC Endpoints (Secrets/KMS/Logs)  |
-      +------------------------------------+    +------------------------------------+
-```
+> 📘 **Deep-Dive Technical Specification:**  
+> For comprehensive subnet CIDR allocations, security group ingress/egress matrices, step-by-step data flow lifecycles, and STRIDE threat modeling, refer to the full documentation: [**architecture/architecture-design.md**](architecture/architecture-design.md).
 
 ---
 
