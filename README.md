@@ -1,9 +1,11 @@
 # DevSecOps Engineer Home Test: Secure AWS Containerized Backend API
 
-![DevSecOps Pipeline](https://img.shields.io/badge/Security-DevSecOps%20Automated-blue)
+[![DevSecOps Pipeline](https://github.com/Swildz/DevSecOpsIndico/actions/workflows/devsecops-pipeline.yml/badge.svg)](https://github.com/Swildz/DevSecOpsIndico/actions/workflows/devsecops-pipeline.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Swildz_DevSecOpsIndico&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Swildz_DevSecOpsIndico)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Swildz_DevSecOpsIndico&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Swildz_DevSecOpsIndico)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=Swildz_DevSecOpsIndico&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=Swildz_DevSecOpsIndico)
 ![AWS Fargate](https://img.shields.io/badge/AWS-ECS%20Fargate-orange)
 ![Terraform](https://img.shields.io/badge/IaC-Terraform%201.5%2B-purple)
-![License](https://img.shields.io/badge/Status-Complete-brightgreen)
 
 This repository contains the complete implementation and documentation for the **DevSecOps Engineer Home Test**. It establishes an enterprise-grade, defense-in-depth security architecture on AWS and implements an automated CI/CD security pipeline that detects vulnerabilities early and prevents unsafe releases.
 
@@ -16,6 +18,7 @@ devsecops-home-test/
 ├── README.md                              # Main technical documentation & quickstart
 ├── Jenkinsfile                            # Production Jenkins Declarative DevSecOps Pipeline
 ├── .gitlab-ci.yml                         # Production GitLab CI/CD Pipeline
+├── sonar-project.properties               # SonarCloud / SonarQube Quality Gate configuration
 ├── .github/
 │   └── workflows/
 │       └── devsecops-pipeline.yml         # Production GitHub Actions Pipeline (OIDC)
@@ -42,6 +45,10 @@ devsecops-home-test/
 │   ├── secrets.tf                         # Secrets Manager with KMS encryption
 │   ├── ecs.tf                             # Immutable ECR, Cluster, and Fargate Service
 │   ├── alb.tf                             # ALB with TLS 1.3 redirect and AWS WAFv2
+│   ├── environments/                      # Multi-environment parameter files
+│   │   ├── dev.tfvars                     # Cost-optimized development configuration
+│   │   ├── staging.tfvars                 # Pre-production UAT & DAST configuration
+│   │   └── production.tfvars              # High-availability Multi-AZ production
 │   ├── terraform.tfvars.example           # Example configuration variables
 │   └── .checkov.yml                       # IaC security scanner policy configuration
 ├── security/

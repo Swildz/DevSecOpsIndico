@@ -6,9 +6,10 @@ This document provides a comprehensive operational record of how the DevSecOps i
 
 ## 1. Executive Summary & Verification Status
 
-| Component | Target Architecture | Implementation Status | Live AWS Identifier / URL |
+| Component | Target Architecture | Implementation Status | Live AWS / SaaS Identifier |
 | :--- | :--- | :--- | :--- |
-| **CI/CD Pipeline** | GitHub Actions (9 Stages) | **100% PASSED (Green)** | `https://github.com/Swildz/DevSecOpsIndico/actions` |
+| **CI/CD Pipeline** | GitHub Actions (10 Stages) | **100% PASSED (Run #18)** | `https://github.com/Swildz/DevSecOpsIndico/actions` |
+| **SAST & Quality Gate**| SonarCloud (`sonarcloud.io`) | **PASSED (0 Issues, A Rating)** | `https://sonarcloud.io/project/overview?id=Swildz_DevSecOpsIndico` |
 | **Container Image** | Hardened FastAPI (Alpine/Debian Slim) | **BUILT & PUSHED** | `858093958225.dkr.ecr.ap-southeast-2.amazonaws.com/indico-api-production-api:latest` |
 | **VPC & Network** | Multi-AZ 3-Tier (Public, Private, DB) | **LIVE & ROUTED** | `vpc-066c6218d6cab1f06` |
 | **Load Balancer** | AWS Application Load Balancer + WAFv2 | **LIVE (HTTPS Redirect)** | `indico-api-production-alb-293930866.ap-southeast-2.elb.amazonaws.com` |
@@ -37,15 +38,16 @@ docker stop test-backend && docker rm test-backend
 ```
 
 ### B. Automated CI/CD Pipeline Execution
-Whenever code is committed or merged to `main`, GitHub Actions automatically triggers all 9 defense-in-depth stages:
+Whenever code is committed or merged to `main`, GitHub Actions automatically triggers all 10 defense-in-depth stages:
 1. **Stage 1: Source Validation** (Black & Flake8 PEP8 compliance)
 2. **Stage 2: Secret Scanning** (Gitleaks detecting API keys & credentials)
-3. **Stage 3: SAST** (Semgrep & SonarQube analyzing CWEs and code quality)
+3. **Stage 3: SAST & Quality Gate** (SonarCloud SAST & Semgrep OWASP Top 10 rules)
 4. **Stage 4: SCA** (Trivy analyzing `requirements.txt` for known CVEs)
 5. **Stage 5: IaC Security** (Checkov scanning `terraform/` against CIS benchmarks)
 6. **Stages 6 & 7: Container Security** (Building unprivileged Docker image and scanning OS packages with Trivy)
 7. **Stage 8: DAST Dynamic Scan** (OWASP ZAP baseline scan running against an ephemeral container sandbox)
-8. **Stage 9: Deploy to AWS** (Short-lived AWS IAM OIDC authentication)
+8. **Stage 9: Deploy to Staging** (Short-lived AWS IAM OIDC deployment to staging environment)
+9. **Stage 10: Deploy to Production** (Manual approval promotion gate for zero-downtime rolling update)
 
 ### C. Live Infrastructure Deployment via Terraform
 ```powershell
@@ -275,10 +277,17 @@ $ aws wafv2 get-web-acl-for-resource \
 }
 ```
 
-### C. GitHub Actions Pipeline Status
-- **Status**: **100% SUCCESS / GREEN**
-- **Total Duration**: 7m 44s
+### C. GitHub Actions & SonarCloud Live Pipeline Verification
+- **GitHub Actions Status**: **100% SUCCESS / GREEN (Run #18)**
+- **Total Duration**: 10m 59s
 - **Security Artifacts Archived**: 5 (Semgrep SARIF, Trivy Filesystem JSON, Checkov IaC JSON, Trivy Container SARIF, OWASP ZAP Baseline Report)
+- **SonarCloud Quality Gate**: **PASSED (Rating A, 0 Issues, 0 Security Hotspots)**
+
+#### 1. Full 10-Stage Pipeline Success (GitHub Actions)
+![GitHub Actions 10 Stages All Green](screenshots/01-github-actions-all-stages-green.png)
+
+#### 2. SonarCloud Quality Gate Passed Dashboard
+![SonarCloud Quality Gate Passed](screenshots/07-sonarcloud-qualitygate-passed.png)
 
 ---
 

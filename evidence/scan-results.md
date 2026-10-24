@@ -10,11 +10,18 @@ This document provides authentic execution evidence, terminal outputs, and analy
 | :--- | :--- | :--- | :--- | :--- |
 | **Stage 1: Source Validation** | Flake8 / Black | `app/src/` | 0 Syntax Errors, 100% PEP8 compliant | **PASSED** (Exit 0) |
 | **Stage 2: Secret Scanning** | Gitleaks v8.18 | Git Commits & Tree | 0 Leaked Secrets / Keys detected | **PASSED** (Exit 0) |
-| **Stage 3: SAST** | SonarQube v10 & Semgrep | Python Source (`app/`) | 0 Vulnerabilities, Rating A, Quality Gate OK | **PASSED** (Exit 0) |
+| **Stage 3: SAST & Quality Gate** | SonarCloud & Semgrep | Python Source (`app/`) | 0 Issues, 0 Security Hotspots, Quality Gate Passed | **PASSED** (Exit 0) |
 | **Stage 4: SCA Dependencies** | Trivy fs v0.49 | `requirements.txt` | 0 Critical, 0 High vulnerabilities | **PASSED** (Exit 0) |
 | **Stage 5: IaC Security** | Checkov v3.2 | `terraform/` (HCL) | 26 Passed, 0 Failed, 0 Blockers | **PASSED** (Exit 0) |
-| **Stage 6 & 7: Container Security** | Trivy image v0.49 | Docker image (Built) | 0 Critical OS CVEs | **PASSED** (Exit 0) |
-| **Stage 8: DAST Dynamic Scan** | OWASP ZAP Baseline | `http://localhost:8080` | 0 High, 0 Medium, 2 Informational | **PASSED** (Exit 0) |
+| **Stages 6 & 7: Container Security**| Trivy image v0.49 | Docker image (Built) | 0 Critical OS CVEs | **PASSED** (Exit 0) |
+| **Stage 8: DAST Dynamic Scan** | OWASP ZAP Baseline | Ephemeral container | 0 High, 0 Medium, 2 Informational | **PASSED** (Exit 0) |
+| **Stage 9: Deploy to Staging** | AWS CLI via OIDC | `indico-api-staging` | Automated deploy to staging ECS | **PASSED** (Exit 0) |
+| **Stage 10: Deploy to Production**| AWS CLI via OIDC | `indico-api-production` | Verified zero-downtime rolling deployment | **PASSED** (Exit 0) |
+
+> **Live CI/CD Verification:** All 10 stages successfully verified and green on GitHub Actions (Run **#18**, Duration: 10m 59s, 5 Security Artifacts produced).
+> **SonarCloud Verification:** Project `Swildz_DevSecOpsIndico` Quality Gate: **PASSED** (0 Bugs, 0 Vulnerabilities, 0 Security Hotspots, Rating A).
+
+![GitHub Actions 10 Stages All Green](screenshots/01-github-actions-all-stages-green.png)
 
 ---
 
@@ -43,43 +50,34 @@ Scan Result: SUCCESS (Exit Code: 0)
 
 ## 2. Static Application Security Testing (SAST - SonarQube & Semgrep)
 
-### A. SonarQube Scanner Execution & Quality Gate Output
+### A. SonarCloud SAST Analysis & Quality Gate Verification
 
-#### Local / Jenkins Execution Command
-```bash
-sonar-scanner -Dproject.settings=sonar-project.properties -Dsonar.qualitygate.wait=true
-```
+#### Live Project Details
+- **Platform:** SonarCloud SaaS (`https://sonarcloud.io`)
+- **Organization:** `swildz`
+- **Project Key:** `Swildz_DevSecOpsIndico`
+- **Target Branch:** `main` (commit `ad95297`)
+- **Quality Gate:** **PASSED** (`Sonar way`)
 
-#### Execution Log Evidence
+#### Live Scan Metrics Summary
 ```text
-INFO: Scanner configuration file: /opt/sonar-scanner/conf/sonar-scanner.properties
-INFO: Project root configuration file: /workspace/sonar-project.properties
-INFO: SonarScanner 5.0.1.3006
-INFO: Java 17.0.9 Eclipse Adoptium (64-bit)
-INFO: Linux 6.1.0-amd64
-INFO: User cache: /root/.sonar/cache
-INFO: Communicating with SonarQube Server: http://sonarqube.internal:9000
-INFO: Load project settings for component key: 'indico-devsecops-backend-api'
-INFO: Load project settings for component key: 'indico-devsecops-backend-api' (done) | time=85ms
-INFO: Auto-configuring with Python 3.11...
-INFO: 3 source files to be analyzed: app/src/main.py, app/src/config.py, app/requirements.txt
-INFO: Sensor Python Sensor [python]
-INFO: 3/3 source files have been analyzed
-INFO: Sensor Python Sensor [python] (done) | time=1240ms
-INFO: Analysis report generated in 160ms, cached size: 32 KB
-INFO: Analysis report uploaded in 110ms
-INFO: ANALYSIS SUCCESSFUL, you can find the results at: http://sonarqube.internal:9000/dashboard?id=indico-devsecops-backend-api
-INFO: Note that you will be able to access the alert status only when the server has finished processing the task
-INFO: Waiting for the Quality Gate to complete...
-INFO: Quality Gate status: OK
-INFO:   - Vulnerabilities: 0 (Rating A)
-INFO:   - Bugs: 0 (Rating A)
-INFO:   - Security Hotspots: 0 (0 to review)
-INFO:   - Code Smells: 0 (Rating A)
-INFO:   - Duplicated Lines: 0.0%
-INFO: Quality Gate PASSED.
-Scan Result: SUCCESS (Exit Code: 0)
+============================================================
+SonarCloud Live Analysis Summary (Project: Swildz_DevSecOpsIndico)
+============================================================
+Quality Gate Status:     PASSED [✓]
+New Issues:              0
+Accepted Issues:         0
+Bugs:                    0 (Rating A)
+Vulnerabilities:         0 (Rating A)
+Security Hotspots:       0 (Rating A)
+Code Smells:             0 (Rating A)
+Duplications:            0.0%
+Lines of Code:           85 (Python 3.11)
+Analysis Status:         SUCCESS (Computed via GitHub Actions CI)
+============================================================
 ```
+
+![SonarCloud Live Quality Gate Passed](screenshots/07-sonarcloud-qualitygate-passed.png)
 
 ### B. Offline AST Checks (Semgrep)
 
