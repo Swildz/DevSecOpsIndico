@@ -48,9 +48,10 @@ devsecops-home-test/
 │   ├── vulnerability-policy.md            # Severity SLAs and unpatched CVE handling policy
 │   ├── incident-response.md               # Playbooks for pipeline failure, secret issue, and compromised IAM
 │   ├── scenarios-remediation.md           # Deep dives for Task 3 Scenarios A, B, and C
-│   └── dast-and-owasp.md                  # OWASP ZAP dynamic testing and OWASP Top 10 mitigations
-└── evidence/
-    └── scan-results.md                    # Complete execution evidence (Gitleaks, Semgrep, Trivy, Checkov, ZAP)
+├── evidence/
+│   ├── scan-results.md                    # Complete tool scan logs (Gitleaks, Semgrep, Trivy, Checkov, ZAP)
+│   └── live-deployment-and-troubleshooting.md # Live AWS deployment proof, RCA of all solved issues & teardown guide
+└── sonar-project.properties               # SonarQube Scanner project configuration
 ```
 
 ---
@@ -216,6 +217,7 @@ docker stop test-api && docker rm test-api
 | **Task 5: Scenario C (Compromised IAM)**| [incident-response.md](file:///d:/2026%20-%20REC/Indico/security/incident-response.md) | Immediate inline DenyAll, revoke active STS sessions, CloudTrail Athena blast radius query, OIDC hardening. |
 | **Task 6: DAST & OWASP Top 10** | [dast-and-owasp.md](file:///d:/2026%20-%20REC/Indico/security/dast-and-owasp.md) | OWASP ZAP baseline + active scans in ephemeral test container, bearer auth injection, mitigation of BOLA, SQLi, and misconfig. |
 | **Scan Execution Evidence** | [scan-results.md](file:///d:/2026%20-%20REC/Indico/evidence/scan-results.md) | Complete logs for Gitleaks, Semgrep, Trivy, Checkov, and OWASP ZAP showing passed gates. |
+| **Live Deployment & RCA** | [live-deployment-and-troubleshooting.md](file:///d:/2026%20-%20REC/Indico/evidence/live-deployment-and-troubleshooting.md) | Full proof of live AWS deployment, root-cause analysis (RCA) of all solved challenges, and teardown steps. |
 
 ---
 
