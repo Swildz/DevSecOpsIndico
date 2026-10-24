@@ -8,6 +8,7 @@
 resource "aws_ecr_repository" "app" {
   name                 = "${var.project_name}-${var.environment}-api"
   image_tag_mutability = "IMMUTABLE" # Prevents overwriting tags (Supply chain security)
+  force_delete         = true        # Allows clean teardown during terraform destroy
 
   image_scanning_configuration {
     scan_on_push = true # Automated static vulnerability scan on upload
